@@ -1,0 +1,235 @@
+import os
+import shutil
+
+BASE_DIR = os.path.abspath("pasha_workspace")
+os.makedirs(BASE_DIR, exist_ok=True)
+os.chdir(BASE_DIR)
+
+is_admin = False
+
+# -------------------------
+# COMMAND REGISTRY
+# -------------------------
+commands = {}
+
+def register(name, desc):
+    def wrapper(func):
+        commands[name] = {"func": func, "desc": desc}
+        return func
+    return wrapper
+
+
+# -------------------------
+# SAFETY LAYER
+# -------------------------
+def safe_path(path):
+    full = os.path.abspath(path)
+    if not full.startswith(BASE_DIR):
+        return None
+    return full
+
+
+# -------------------------
+# HELP SYSTEM
+# -------------------------
+@register("help", "help | help <cmd>")
+def help_cmd(args):
+    if not args:
+        print("\n=== PashaDV Commands ===")
+        for k in commands:
+            print(f" - {k}")
+        return
+
+    cmd = args[0]
+    if cmd in commands:
+        print(f"{cmd}: {commands[cmd]['desc']}")
+    else:
+        print("ERR: unknown command")
+
+
+# -------------------------
+# BASIC FS COMMANDS
+# -------------------------
+@register("ls", "list directory")
+def ls(args):
+    for i in os.listdir("."):
+        print(" -", i)
+
+
+@register("pwd", "print working directory")
+def pwd(args):
+    print(os.getcwd())
+
+
+@register("tree", "directory tree view")
+def tree(args):
+    for root, dirs, files in os.walk("."):
+        level = root.count(os.sep)
+        indent = "  " * level
+        print(f"{indent}{os.path.basename(root)}/")
+        for f in files:
+            print(f"{indent}  - {f}")
+
+
+# -------------------------
+# FILE OPS
+# -------------------------
+@register("touch", "create file")
+def touch(args):
+    if not args:
+        return
+    path = safe_path(args[0])
+    if path:
+        open(path, "w").close()
+        print("[OK] file created")
+
+
+@register("file", "create folder")
+def file_cmd(args):
+    if not args:
+        return
+    path = safe_path(args[0])
+    if path:
+        os.makedirs(path, exist_ok=True)
+        print("[OK] folder created")
+
+
+@register("read", "read file")
+def read(args):
+    if not args:
+        return
+    try:
+        with open(args[0], "r") as f:
+            print(f.read())
+    except:
+        print("ERR")
+
+
+@register("write", "write file: write file.txt text...")
+def write(args):
+    if len(args) < 2:
+        return
+    try:
+        with open(args[0], "w") as f:
+            f.write(" ".join(args[1:]))
+        print("[OK] written")
+    except:
+        print("ERR")
+
+
+@register("rename", "rename file")
+def rename(args):
+    if len(args) < 2:
+        return
+    old = safe_path(args[0])
+    new = safe_path(args[1])
+    if old and new:
+        os.rename(old, new)
+        print("[OK] renamed")
+
+
+@register("delete", "delete file/folder (ADMIN ONLY)")
+def delete(args):
+    global is_admin
+    if not is_admin:
+        print("ERR: admin only")
+        return
+    if not args:
+        return
+
+    path = safe_path(args[0])
+    if not path:
+        return
+
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    else:
+        os.remove(path)
+
+    print("[OK] deleted")
+
+
+# -------------------------
+# DIR OPS
+# -------------------------
+@register("mkdir", "make directory")
+def mkdir(args):
+    if not args:
+        return
+    path = safe_path(args[0])
+    if path:
+        os.makedirs(path, exist_ok=True)
+        print("[OK]")
+
+
+@register("cd", "change directory (ADMIN ONLY)")
+def cd(args):
+    global is_admin
+    if not is_admin:
+        print("ERR: admin required")
+        return
+    if not args:
+        return
+
+    path = safe_path(args[0])
+    if path:
+        os.chdir(path)
+        print("[OK] moved")
+
+
+# -------------------------
+# AUTH
+# -------------------------
+@register("login", "login admin: login pasha-admin")
+def login(args):
+    global is_admin
+    if args and args[0] == "pasha-admin":
+        is_admin = True
+        print("[OK] admin enabled")
+    else:
+        print("ERR")
+
+
+# -------------------------
+# UI COMMANDS
+# -------------------------
+@register("cls", "clear screen")
+def cls(args):
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+@register("clear", "clear screen")
+def clear(args):
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+# -------------------------
+# SHELL LOOP
+# -------------------------
+def shell():
+    print("PashaDV Shell v1.0")
+    print("type: help")
+
+    while True:
+        try:
+            raw = input("pasha> ").strip()
+        except:
+            break
+
+        if raw == "exit":
+            break
+
+        if not raw:
+            continue
+
+        parts = raw.split()
+        cmd = parts[0]
+        args = parts[1:]
+
+        if cmd in commands:
+            commands[cmd]["func"](args)
+        else:
+            print("ERR: unknown command")
+
+
+shell()
