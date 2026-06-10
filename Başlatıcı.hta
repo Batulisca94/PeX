@@ -1,0 +1,110 @@
+<html>
+<head>
+<title>p!loader</title>
+
+<HTA:APPLICATION
+    ID="piloader"
+    APPLICATIONNAME="p!loader"
+    BORDER="none"
+    CAPTION="no"
+    SHOWINTASKBAR="yes"
+    SINGLEINSTANCE="yes"
+    SYSMENU="no"
+/>
+
+<style>
+html, body {
+    margin:0;
+    padding:0;
+    background:#0a0a0d;
+    color:#00ff99;
+    font-family:Consolas;
+    overflow:hidden;
+}
+
+#topbar {
+    height:34px;
+    background:#111;
+    border-bottom:1px solid #00ff99;
+    padding:6px 10px;
+    cursor:move;
+}
+
+#container { padding:20px; }
+
+input {
+    width:100%;
+    padding:10px;
+    background:#15151c;
+    border:1px solid #00ff99;
+    color:#00ff99;
+}
+
+button {
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+    background:#00ff99;
+    border:none;
+    font-weight:bold;
+}
+
+#log {
+    margin-top:12px;
+    color:#888;
+}
+</style>
+
+<script language="VBScript">
+
+Set shell = CreateObject("WScript.Shell")
+Set fso = CreateObject("Scripting.FileSystemObject")
+
+Sub RunCommand()
+    Dim cmd
+    cmd = LCase(document.all("cmd").value)
+
+    If cmd = "" Then Exit Sub
+
+    document.all("log").innerText = "exec: " & cmd
+
+    Select Case cmd
+
+        Case "b"
+            If fso.FileExists("files\launcher.bat") Then
+                shell.Run "cmd /k ""files\launcher.bat"""
+            Else
+                MsgBox "launcher.bat missing", vbCritical, "p!loader"
+            End If
+
+        Case "h"
+            MsgBox "Commands: b=launcher, h=help, q=quit", vbInformation, "p!loader"
+
+        Case "q"
+            window.close
+
+        Case Else
+            MsgBox "invalid opcode: " & cmd, vbExclamation, "p!loader"
+
+    End Select
+End Sub
+
+</script>
+
+</head>
+
+<body>
+
+<div id="topbar">p!loader Starter</div>
+
+<div id="container">
+
+<input id="cmd" type="text" />
+<button onclick="RunCommand()">EXECUTE</button>
+
+<div id="log">idle</div>
+
+</div>
+
+</body>
+</html>
